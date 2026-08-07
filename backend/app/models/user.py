@@ -15,3 +15,4 @@ class User(Base):
     donations = relationship("Donation", back_populates="restaurant", cascade="all, delete-orphan")
     recommendations = relationship("Recommendation", back_populates="ngo", cascade="all, delete-orphan")
     deliveries = relationship("Delivery", back_populates="volunteer")
+    ngo_profile = relationship("NGOProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
