@@ -29,3 +29,6 @@ pydantic-settings>=2.0.0
 passlib[bcrypt]>=1.7.4
 pyjwt>=2.8.0
 python-multipart>=0.0.6
+geopy>=2.4.0
+haversine>=2.8.0
+
