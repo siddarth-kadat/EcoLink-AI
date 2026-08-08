@@ -51,18 +51,30 @@ def get_restaurant_donations(db: Session, restaurant_id: int):
     return db.query(Donation).filter(Donation.restaurant_id == restaurant_id).all()
 
 
-def track_donation_status(db: Session, donation_id: int, restaurant_id: int):
+def track_donation_status(db: Session, donation_id: int, user_id: int, role: str):
     """
     Retrieves the donation and its nested delivery tracking details.
     """
-    donation = db.query(Donation).filter(
-        Donation.donation_id == donation_id,
-        Donation.restaurant_id == restaurant_id
-    ).first()
+    donation = db.query(Donation).filter(Donation.donation_id == donation_id).first()
 
     if not donation:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Donation not found or access denied"
+            detail="Donation not found"
         )
+
+    # Allow access if Restaurant owns it, or Volunteer is assigned to the delivery
+    if role == "Restaurant":
+        if donation.restaurant_id != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied to this donation tracking route."
+            )
+    elif role == "Volunteer":
+        if not donation.delivery or donation.delivery.volunteer_id != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied. You are not the assigned volunteer courier."
+            )
+
     return donation

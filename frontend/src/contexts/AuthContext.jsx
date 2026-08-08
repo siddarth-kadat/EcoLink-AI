@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import authService from '../services/authService';
 
 const AuthContext = createContext(null);
 
@@ -7,35 +8,41 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Simulate initial auth check
-        const savedRole = localStorage.getItem('user_role');
-        if (savedRole) {
-            setUser({
-                name: 'Alex Rivera',
-                role: savedRole,
-                avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80'
-            });
+        const token = localStorage.getItem('auth_token');
+        const userInfoStr = localStorage.getItem('user_info');
+        if (token && userInfoStr) {
+            try {
+                setUser(JSON.parse(userInfoStr));
+            } catch (err) {
+                console.error("Failed to restore auth state", err);
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('user_role');
+                localStorage.removeItem('user_info');
+            }
         }
         setLoading(false);
     }, []);
 
-    const login = (role) => {
-        const userData = {
-            name: 'Alex Rivera',
-            role: role,
-            avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80'
-        };
+    const login = async (email, password) => {
+        const response = await authService.login(email, password);
+        const userData = response.data.user;
         setUser(userData);
-        localStorage.setItem('user_role', role);
+        return response;
     };
 
-    const logout = () => {
+    const logout = async () => {
+        await authService.logout();
         setUser(null);
-        localStorage.removeItem('user_role');
+    };
+
+    const updateUser = (updatedData) => {
+        const newUser = { ...user, ...updatedData };
+        setUser(newUser);
+        localStorage.setItem('user_info', JSON.stringify(newUser));
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, loading }}>
+        <AuthContext.Provider value={{ user, login, logout, loading, updateUser }}>
             {!loading && children}
         </AuthContext.Provider>
     );

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Inbox, Clock } from 'lucide-react';
 
-const RequestItem = ({ restaurant, items, timeLeft, matchScore }) => (
+const RequestItem = ({ restaurant, items, timeLeft, matchScore, onClaim, claiming }) => (
     <div className="flex items-center justify-between p-4 hover:bg-slate-50 rounded-2xl transition-all border border-transparent hover:border-slate-100 group">
         <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 group-hover:bg-white group-hover:shadow-sm transition-all">
@@ -22,8 +22,12 @@ const RequestItem = ({ restaurant, items, timeLeft, matchScore }) => (
                     {matchScore}% Match
                 </div>
             </div>
-            <button className="px-6 py-2 bg-slate-900 text-white text-xs font-bold rounded-xl hover:bg-slate-800 transition-colors">
-                Claim
+            <button
+                onClick={onClaim}
+                disabled={claiming}
+                className="px-6 py-2 bg-slate-900 text-white text-xs font-bold rounded-xl hover:bg-slate-800 transition-colors disabled:opacity-50"
+            >
+                {claiming ? 'Claiming...' : 'Claim'}
             </button>
         </div>
     </div>

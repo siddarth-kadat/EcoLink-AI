@@ -19,3 +19,9 @@ class Donation(Base):
     restaurant = relationship("User", back_populates="donations")
     recommendation = relationship("Recommendation", back_populates="donation", uselist=False, cascade="all, delete-orphan")
     delivery = relationship("Delivery", back_populates="donation", uselist=False, cascade="all, delete-orphan")
+
+    @property
+    def destination(self) -> str:
+        if self.recommendation and self.recommendation.ngo:
+            return self.recommendation.ngo.name
+        return "Hope Mission"

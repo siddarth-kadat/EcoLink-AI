@@ -24,8 +24,8 @@ export default {
                 '2xl': '20px',
             },
             fontFamily: {
-                sans: ['Inter', 'sans-serif'],
-                display: ['Inter', 'sans-serif'],
+                sans: ['Outfit', 'sans-serif'],
+                display: ['Outfit', 'sans-serif'],
             },
             maxWidth: {
                 'container-max': '1440px',

@@ -4,7 +4,7 @@ from fastapi.security import HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
-from app.middleware.auth import require_roles, decode_access_token, ROLE_RESTAURANT
+from app.middleware.auth import require_roles, decode_access_token, ROLE_RESTAURANT, ROLE_VOLUNTEER
 from app.schemas.donation import CreateDonationRequest, DonationResponse, DonationTrackResponse
 from app.services.donation_service import create_donation, get_restaurant_donations, track_donation_status
 
@@ -34,23 +34,29 @@ def add_donation(
 
 @router.get("/donations/history", response_model=List[DonationResponse])
 def get_history(
-    current_user: dict = Depends(require_roles(ROLE_RESTAURANT)),
+    current_user: dict = Depends(require_roles(ROLE_RESTAURANT, ROLE_VOLUNTEER)),
     db: Session = Depends(get_db)
 ):
     """
-    Retrieve historical donation listings registered by the logged-in Restaurant user.
+    Retrieve historical donation listings registered by Restaurant or assigned Volunteer.
     """
-    restaurant_id = int(current_user["sub"])
-    return get_restaurant_donations(db, restaurant_id)
+    user_id = int(current_user["sub"])
+    role = current_user["role"]
+    if role == "Volunteer":
+        from app.models.delivery import Delivery
+        deliveries = db.query(Delivery).filter(Delivery.volunteer_id == user_id).all()
+        return [d.donation for d in deliveries if d.donation]
+    return get_restaurant_donations(db, user_id)
 
 @router.get("/donations/{donation_id}/track", response_model=DonationTrackResponse)
 def get_tracking(
     donation_id: int,
-    current_user: dict = Depends(require_roles(ROLE_RESTAURANT)),
+    current_user: dict = Depends(require_roles(ROLE_RESTAURANT, ROLE_VOLUNTEER)),
     db: Session = Depends(get_db)
 ):
     """
     Track delivery dispatch operations for a specific donation.
     """
-    restaurant_id = int(current_user["sub"])
-    return track_donation_status(db, donation_id, restaurant_id)
+    user_id = int(current_user["sub"])
+    role = current_user["role"]
+    return track_donation_status(db, donation_id, user_id, role)

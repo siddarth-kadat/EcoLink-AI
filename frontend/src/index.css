@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    font-family: 'Outfit', system-ui, Avenir, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+    font-weight: 400;
+    color: #0F172A;
+    background-color: #F8FAFC;
+}
+
+body {
+    margin: 0;
+    min-width: 320px;
+    min-height: 100vh;
+    background-color: #F8FAFC;
+}
+
+@layer components {
+    .glass-panel {
+        @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-sm;
+    }
+
+    .btn-primary {
+        @apply bg-primary text-white px-6 py-2.5 rounded-lg font-semibold transition-all hover:opacity-90 active:scale-95 flex items-center justify-center gap-2;
+    }
+
+    .btn-secondary {
+        @apply bg-white border border-slate-200 text-slate-800 px-6 py-2.5 rounded-lg font-semibold transition-all hover:bg-slate-50 active:scale-95 flex items-center justify-center gap-2;
+    }
+}

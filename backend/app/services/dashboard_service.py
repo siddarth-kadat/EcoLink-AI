@@ -21,21 +21,21 @@ def get_dashboard_stats(db: Session, user_id: int, role: str) -> DashboardStatsR
     # 1. Calculate stats based on role
     if role == "Restaurant":
         donations = db.query(Donation).filter(Donation.restaurant_id == user_id).all()
-        delivered = [d for d in donations if d.status == "Delivered"]
+        delivered = [d for d in donations if d.status in ("Delivered", "Distributed")]
         active = [d for d in donations if d.status in ("Available", "Claimed")]
         
         meals_donated = sum(_parse_quantity(d.quantity) for d in delivered)
         active_count = len(active)
     elif role == "NGO":
         recommendations = db.query(Recommendation).filter(Recommendation.ngo_id == user_id).all()
-        delivered = [r.donation for r in recommendations if r.donation and r.donation.status == "Delivered"]
+        delivered = [r.donation for r in recommendations if r.donation and r.donation.status in ("Delivered", "Distributed")]
         active = [r.donation for r in recommendations if r.donation and r.donation.status in ("Available", "Claimed")]
         
         meals_donated = sum(_parse_quantity(d.quantity) for d in delivered)
         active_count = len(active)
     else: # Admin or Volunteer
         donations = db.query(Donation).all()
-        delivered = [d for d in donations if d.status == "Delivered"]
+        delivered = [d for d in donations if d.status in ("Delivered", "Distributed")]
         active = [d for d in donations if d.status in ("Available", "Claimed")]
         
         meals_donated = sum(_parse_quantity(d.quantity) for d in delivered)

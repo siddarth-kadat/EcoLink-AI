@@ -1,5 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import {
     LayoutDashboard,
     PlusCircle,
@@ -9,18 +10,41 @@ import {
     BarChart3,
     Settings,
     HelpCircle,
-    LogOut
+    ArrowUpRight,
+    Inbox,
+    Package
 } from 'lucide-react';
 
-const Sidebar = ({ role = 'restaurant' }) => {
-    const navItems = [
-        { label: 'Overview', icon: LayoutDashboard, path: '/dashboard' },
-        { label: 'Create Donation', icon: PlusCircle, path: '/create-donation' },
-        { label: 'History', icon: History, path: '/history' },
-        { label: 'Tracking', icon: Truck, path: '/tracking' },
-        { label: 'AI Recommendations', icon: BrainCircuit, path: '/recommendations' },
-        { label: 'Analytics', icon: BarChart3, path: '/analytics' },
-    ];
+const Sidebar = () => {
+    const { user } = useAuth();
+    const role = user?.role?.toLowerCase() || 'restaurant';
+
+    let navItems = [];
+    if (role === 'restaurant') {
+        navItems = [
+            { label: 'Overview', icon: LayoutDashboard, path: '/restaurant' },
+            { label: 'Create Donation', icon: PlusCircle, path: '/create-donation' },
+            { label: 'History', icon: History, path: '/history' },
+            { label: 'Tracking', icon: Truck, path: '/tracking' },
+            { label: 'AI Recommendations', icon: BrainCircuit, path: '/recommendations' }
+        ];
+    } else if (role === 'ngo') {
+        navItems = [
+            { label: 'Overview', icon: LayoutDashboard, path: '/ngo' },
+            { label: 'Incoming Requests', icon: Inbox, path: '/incoming-donations' },
+            { label: 'Inventory', icon: Package, path: '/inventory' }
+        ];
+    } else if (role === 'volunteer') {
+        navItems = [
+            { label: 'Overview', icon: LayoutDashboard, path: '/volunteer' },
+            { label: 'Tracking', icon: Truck, path: '/tracking' }
+        ];
+    } else if (role === 'admin') {
+        navItems = [
+            { label: 'Overview', icon: LayoutDashboard, path: '/admin' },
+            { label: 'Analytics', icon: BarChart3, path: '/analytics' }
+        ];
+    }
 
     return (
         <aside className="fixed left-0 top-0 h-full w-64 bg-white border-r border-slate-100 hidden lg:flex flex-col p-6 z-50">
@@ -61,13 +85,6 @@ const Sidebar = ({ role = 'restaurant' }) => {
                     <HelpCircle size={20} />
                     <span className="text-sm">Support</span>
                 </NavLink>
-
-                <div className="mt-6 p-4 bg-slate-900 rounded-2xl text-white">
-                    <p className="text-xs font-medium opacity-70">Enterprise Plan</p>
-                    <button className="mt-2 w-full py-2 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-semibold transition-colors">
-                        Upgrade
-                    </button>
-                </div>
             </div>
         </aside>
     );

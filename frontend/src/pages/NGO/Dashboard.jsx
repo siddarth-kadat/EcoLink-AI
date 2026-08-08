@@ -1,34 +1,52 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { Inbox, Package, Users, Heart, ChevronRight, PieChart as PieIcon } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { useNavigate } from 'react-router-dom';
 import StatCard from '../../components/cards/StatCard';
 import RequestItem from '../../components/cards/RequestItem';
 import { dashboardService } from '../../services/dashboardService';
 import { donationService } from '../../services/donationService';
+import { recommendationService } from '../../services/recommendationService';
+import { getTimeRemaining } from '../../utils/helpers';
 
 const NGODashboard = () => {
+    const navigate = useNavigate();
     const [stats, setStats] = useState(null);
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [claimingId, setClaimingId] = useState(null);
+
+    const loadDashboardData = async () => {
+        try {
+            const [statsRes, requestsRes] = await Promise.all([
+                dashboardService.getNGOStats(),
+                donationService.getIncomingDonations()
+            ]);
+            setStats(statsRes.data);
+            setRequests(requestsRes.data);
+        } catch (err) {
+            console.error("Failed to load NGO dashboard data", err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const loadDashboardData = async () => {
-            try {
-                const [statsRes, requestsRes] = await Promise.all([
-                    dashboardService.getNGOStats(),
-                    donationService.getIncomingDonations()
-                ]);
-                setStats(statsRes.data);
-                setRequests(requestsRes.data);
-            } catch (err) {
-                console.error("Failed to load NGO dashboard data", err);
-            } finally {
-                setLoading(false);
-            }
-        };
         loadDashboardData();
     }, []);
+
+    const handleClaim = async (recId) => {
+        setClaimingId(recId);
+        try {
+            await recommendationService.acceptRecommendation(recId);
+            // Refresh data after claiming
+            await loadDashboardData();
+        } catch (err) {
+            console.error("Failed to claim recommendation", err);
+        } finally {
+            setClaimingId(null);
+        }
+    };
 
     if (loading) {
         return (
@@ -39,10 +57,10 @@ const NGODashboard = () => {
     }
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-8 text-left">
             <header>
-                <h2 className="text-4xl font-display font-bold text-slate-900">NGO Dashboard</h2>
-                <p className="text-slate-500 mt-1">Overview of your food recovery operations</p>
+                <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">NGO Dashboard</h2>
+                <p className="text-xs text-slate-500 mt-1 font-medium">Overview of your food recovery operations</p>
             </header>
 
             {/* Stats Grid */}
@@ -50,7 +68,7 @@ const NGODashboard = () => {
                 <StatCard title="Incoming Donations" value={stats?.incomingDonations || '0'} icon={Inbox} color="bg-orange-50 text-orange-600" />
                 <StatCard title="Items in Inventory" value={stats?.itemsInInventory || '0'} icon={Package} color="bg-blue-50 text-blue-600" />
                 <StatCard title="Active Volunteers" value={stats?.activeVolunteers || '0'} icon={Users} color="bg-emerald-50 text-emerald-600" />
-                <StatCard title="Families Fed" value={stats?.familiesFed || '0'} icon={Heart} color="bg-rose-50 text-rose-600" />
+                <StatCard title="Families Fed This Week" value={stats?.familiesFed || '0'} icon={Heart} color="bg-rose-50 text-rose-600" />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -59,32 +77,36 @@ const NGODashboard = () => {
                     <div className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm">
                         <div className="flex justify-between items-center mb-8">
                             <h4 className="text-xl font-bold text-slate-900">Incoming Requests</h4>
-                            <button className="text-xs font-bold text-primary hover:underline">View All</button>
+                            <div className="flex items-center gap-3">
+                                <button 
+                                    onClick={() => {
+                                        setLoading(true);
+                                        loadDashboardData();
+                                    }} 
+                                    className="text-xs font-bold text-slate-450 hover:text-slate-900 focus:outline-none"
+                                >
+                                    Refresh
+                                </button>
+                                <button onClick={() => navigate('/incoming-donations')} className="text-xs font-bold text-primary hover:underline">View All</button>
+                            </div>
                         </div>
                         <div className="space-y-2">
-                            {requests.map((request) => (
-                                <RequestItem
-                                    key={request.id}
-                                    restaurant={request.restaurant}
-                                    items={request.items}
-                                    timeLeft={request.timeLeft}
-                                    matchScore={request.matchScore}
-                                />
-                            ))}
+                            {requests.filter(rec => rec.donation && rec.donation.status === 'Available').length === 0 ? (
+                                <div className="p-10 text-center text-slate-450 text-xs font-medium">No matching requests found today.</div>
+                            ) : (
+                                requests.filter(rec => rec.donation && rec.donation.status === 'Available').map((rec) => (
+                                    <RequestItem
+                                        key={rec.recommendation_id}
+                                        restaurant={rec.donation.pickup_location}
+                                        items={`${rec.donation.food_type} (${rec.donation.quantity} portions)`}
+                                        timeLeft={getTimeRemaining(rec.donation.expiry_time)}
+                                        matchScore={Math.round(rec.confidence_score * 100)}
+                                        claiming={claimingId === rec.recommendation_id}
+                                        onClaim={() => handleClaim(rec.recommendation_id)}
+                                    />
+                                ))
+                            )}
                         </div>
-                    </div>
-
-                    <div className="bg-slate-900 p-8 rounded-[40px] text-white overflow-hidden relative group">
-                        <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
-                            <div>
-                                <h4 className="text-2xl font-bold mb-2">Short on volunteers?</h4>
-                                <p className="text-slate-400 text-sm max-w-md">Our AI can automatically broadcast urgent pickup requests to top-rated volunteers in your immediate area.</p>
-                            </div>
-                            <button className="whitespace-nowrap px-8 py-4 bg-white text-slate-900 rounded-2xl font-bold hover:bg-slate-100 transition-all flex items-center gap-2">
-                                Broadcast Task <ChevronRight size={18} />
-                            </button>
-                        </div>
-                        <div className="absolute -right-20 -bottom-20 w-64 h-64 bg-primary/20 rounded-full blur-[80px]" />
                     </div>
                 </div>
 
@@ -95,7 +117,7 @@ const NGODashboard = () => {
                             <h4 className="text-xl font-bold text-slate-900">Inventory Distribution</h4>
                             <PieIcon size={20} className="text-slate-400" />
                         </div>
-                        <div className="h-64 w-full">
+                        <div className="relative h-64 w-full flex items-center justify-center">
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
                                     <Pie
@@ -116,6 +138,10 @@ const NGODashboard = () => {
                                     />
                                 </PieChart>
                             </ResponsiveContainer>
+                            <div className="absolute flex flex-col items-center justify-center pb-2">
+                                <span className="text-2xl font-black text-slate-900">1.2k</span>
+                                <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Total</span>
+                            </div>
                         </div>
                         <div className="space-y-3 mt-6">
                             {stats?.inventoryDistribution.map((item) => (

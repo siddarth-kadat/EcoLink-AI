@@ -1,47 +1,47 @@
-// Simulated donation service returning mock responses structured like Axios requests
+import api from './api';
+
 export const donationService = {
   createDonation: async (donationData) => {
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    return {
-      data: {
-        success: true,
-        id: 'don_' + Math.random().toString(36).substring(2, 11),
-        message: 'Donation created successfully.'
-      }
+    const payload = {
+      food_type: donationData.category + (donationData.description ? ` - ${donationData.description}` : ''),
+      quantity: parseInt(donationData.weight) || 10,
+      expiry_time: new Date(donationData.expiry).toISOString(),
+      pickup_location: donationData.pickup_location || 'Vidya Nagar, Hubballi, Karnataka, India'
     };
+    // recommendations/generate creates donation and generates matching recommendations
+    return api.post('/recommendations/generate', payload);
   },
 
   getDonationHistory: async () => {
-    await new Promise((resolve) => setTimeout(resolve, 400));
-    return {
-      data: [
-        { id: 'don-1', foodType: 'Fresh Bakery Items', quantity: '15 lbs', status: 'Delivered', date: '2026-08-05' },
-        { id: 'don-2', foodType: 'Assorted Salads', quantity: '10 lbs', status: 'Claimed', date: '2026-08-07' }
-      ]
-    };
+    return api.get('/donations/history');
   },
 
   getIncomingDonations: async () => {
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    return {
-      data: [
-        { id: 'don-3', restaurant: 'Green Leaf Bistro', items: '3 boxes assorted vegetables', timeLeft: '2h', matchScore: 94 },
-        { id: 'don-4', restaurant: 'Sunrise Bakery', items: '15 loaves day-old bread', timeLeft: '45m', matchScore: 88 },
-        { id: 'don-5', restaurant: 'The Grill House', items: '10 servings cooked protein (chilled)', timeLeft: '3h', matchScore: 91 },
-        { id: 'don-6', restaurant: 'Ocean Blue Seafood', items: '5 lbs fresh salmon (iced)', timeLeft: '1h', matchScore: 97 }
-      ]
-    };
+    return api.get('/ngo/recommendations');
   },
 
   getAvailableTasks: async () => {
-    await new Promise((resolve) => setTimeout(resolve, 400));
-    return {
-      data: [
-        { id: 'task-1', title: 'Bakery C', distance: '1.2 mi', weight: '45', time: '15m', type: 'Pickup' },
-        { id: 'task-2', title: 'Supermarket D', distance: '2.5 mi', weight: '120', time: '25m', type: 'Pickup' },
-        { id: 'task-3', title: 'Farm Stand E', distance: '4.0 mi', weight: '80', time: '40m', type: 'Pickup' }
-      ]
-    };
+    return api.get('/volunteer/deliveries/available');
+  },
+
+  getMyTasks: async () => {
+    return api.get('/volunteer/deliveries/my');
+  },
+
+  acceptTask: async (deliveryId) => {
+    return api.post(`/volunteer/deliveries/${deliveryId}/accept`);
+  },
+
+  confirmPickup: async (deliveryId) => {
+    return api.post(`/volunteer/deliveries/${deliveryId}/pickup`);
+  },
+
+  confirmDelivery: async (deliveryId) => {
+    return api.post(`/volunteer/deliveries/${deliveryId}/deliver`);
+  },
+
+  trackDonation: async (donationId) => {
+    return api.get(`/donations/${donationId}/track`);
   }
 };
 
